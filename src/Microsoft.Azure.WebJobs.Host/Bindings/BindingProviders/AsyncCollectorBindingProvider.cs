@@ -78,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
                 var genericType = parameterType.GetGenericTypeDefinition();
                 var elementType = parameterType.GetGenericArguments()[0];
 
-                if (genericType == typeof(IAsyncCollector<>))
+                if (genericType == typeof(IAsyncCollector<>) || genericType.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IAsyncCollector<>)))
                 {
                     return new CollectorBindingPattern(Mode.IAsyncCollector, elementType);
                 }

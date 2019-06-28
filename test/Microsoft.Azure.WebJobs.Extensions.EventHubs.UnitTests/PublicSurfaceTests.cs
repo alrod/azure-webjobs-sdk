@@ -19,7 +19,8 @@ namespace Microsoft.Azure.WebJobs.Host.UnitTests
                 "EventHubTriggerAttribute",
                 "EventHubOptions",
                 "EventHubWebJobsBuilderExtensions",
-                "EventHubsWebJobsStartup"
+                "EventHubsWebJobsStartup",
+                "IPartitionedAsyncCollector`1"
             };
 
             TestHelpers.AssertPublicTypes(expected, assembly);

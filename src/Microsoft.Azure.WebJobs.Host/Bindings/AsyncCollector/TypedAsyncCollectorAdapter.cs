@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs.Host.Bindings
 {
     // IAsyncCollector<TSrc> --> IAsyncCollector<TDest>
-    internal class TypedAsyncCollectorAdapter<TSrc, TDest, TAttribute> : IAsyncCollector<TSrc>
+    public class TypedAsyncCollectorAdapter<TSrc, TDest, TAttribute> : IAsyncCollector<TSrc>
         where TAttribute : Attribute
     {
         private readonly IAsyncCollector<TDest> _inner;
