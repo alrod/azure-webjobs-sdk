@@ -38,7 +38,9 @@ namespace Microsoft.Azure.WebJobs.Host.Indexers
         private readonly ILogger _logger;
         private readonly SharedQueueHandler _sharedQueue;
         private readonly TimeoutAttribute _defaultTimeout;
+        private readonly RetryAttribute _defaultRetry;
         private readonly bool _allowPartialHostStartup;
+        private readonly IRetryManagerProvider _retryManagerProvider;
 
         public FunctionIndexer(
             ITriggerBindingProvider triggerBindingProvider,
@@ -47,9 +49,11 @@ namespace Microsoft.Azure.WebJobs.Host.Indexers
             IFunctionExecutor executor,
             SingletonManager singletonManager,
             ILoggerFactory loggerFactory,
+            IRetryManagerProvider retryManagerProvider,
             INameResolver nameResolver = null,
             SharedQueueHandler sharedQueue = null,
             TimeoutAttribute defaultTimeout = null,
+            RetryAttribute retryAttribute = null,
             bool allowPartialHostStartup = false)
         {
             _triggerBindingProvider = triggerBindingProvider ?? throw new ArgumentNullException(nameof(triggerBindingProvider));
@@ -62,6 +66,8 @@ namespace Microsoft.Azure.WebJobs.Host.Indexers
             _sharedQueue = sharedQueue;
             _defaultTimeout = defaultTimeout;
             _allowPartialHostStartup = allowPartialHostStartup;
+            _retryManagerProvider = retryManagerProvider;
+            _defaultRetry = retryAttribute;
         }
 
         public async Task IndexTypeAsync(Type type, IFunctionIndexCollector index, CancellationToken cancellationToken)
@@ -333,7 +339,7 @@ namespace Microsoft.Azure.WebJobs.Host.Indexers
         {
             ITriggeredFunctionBinding<TTriggerValue> functionBinding = new TriggeredFunctionBinding<TTriggerValue>(descriptor, parameterName, triggerBinding, nonTriggerBindings, _singletonManager);
             ITriggeredFunctionInstanceFactory<TTriggerValue> instanceFactory = new TriggeredFunctionInstanceFactory<TTriggerValue>(functionBinding, invoker, descriptor);
-            ITriggeredFunctionExecutor triggerExecutor = new TriggeredFunctionExecutor<TTriggerValue>(descriptor, _executor, instanceFactory);
+            ITriggeredFunctionExecutor triggerExecutor = new TriggeredFunctionExecutor<TTriggerValue>(descriptor, _executor, instanceFactory, _retryManagerProvider);
             IListenerFactory listenerFactory = new ListenerFactory(descriptor, triggerExecutor, triggerBinding, _sharedQueue);
 
             return new FunctionDefinition(descriptor, instanceFactory, listenerFactory);
@@ -344,7 +350,8 @@ namespace Microsoft.Azure.WebJobs.Host.Indexers
             MethodInfo method,
             IJobActivator jobActivator = null,
             INameResolver nameResolver = null,
-            TimeoutAttribute defaultTimeout = null)
+            TimeoutAttribute defaultTimeout = null,
+            RetryAttribute defaultRetry = null)
         {
             var disabled = HostListenerFactory.IsDisabled(method, nameResolver, jobActivator);
 
@@ -372,6 +379,7 @@ namespace Microsoft.Azure.WebJobs.Host.Indexers
                 IsDisabled = disabled,
                 HasCancellationToken = hasCancellationToken,
                 TimeoutAttribute = TypeUtility.GetHierarchicalAttributeOrNull<TimeoutAttribute>(method) ?? defaultTimeout,
+                RetryAttribute = TypeUtility.GetHierarchicalAttributeOrNull<RetryAttribute>(method) ?? defaultRetry,
                 SingletonAttributes = method.GetCustomAttributes<SingletonAttribute>(),
                 MethodLevelFilters = method.GetCustomAttributes().OfType<IFunctionFilter>(),
                 ClassLevelFilters = method.DeclaringType.GetCustomAttributes().OfType<IFunctionFilter>()
@@ -381,7 +389,7 @@ namespace Microsoft.Azure.WebJobs.Host.Indexers
         private FunctionDescriptor CreateFunctionDescriptor(MethodInfo method, string triggerParameterName,
             ITriggerBinding triggerBinding, IReadOnlyDictionary<string, IBinding> nonTriggerBindings)
         {
-            var descr = FromMethod(method, this._activator, _nameResolver, _defaultTimeout);
+            var descr = FromMethod(method, this._activator, _nameResolver, _defaultTimeout, _defaultRetry);
 
             List<ParameterDescriptor> parameters = new List<ParameterDescriptor>();
 

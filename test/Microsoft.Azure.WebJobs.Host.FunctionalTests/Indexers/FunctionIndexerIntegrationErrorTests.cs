@@ -34,6 +34,7 @@ namespace Microsoft.Azure.WebJobs.Host.UnitTests.Indexers
                     new Mock<IJobActivator>(MockBehavior.Strict).Object,
                     executorMock.Object,
                     new SingletonManager(),
+                    null,
                     null);
 
                 Assert.Throws<FunctionIndexingException>(() => indexer.IndexMethodAsync(method, stubIndex, CancellationToken.None).GetAwaiter().GetResult());

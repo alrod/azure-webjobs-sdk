@@ -26,7 +26,9 @@ namespace Microsoft.Azure.WebJobs.Host.Indexers
         private readonly ILoggerFactory _loggerFactory;
         private readonly SharedQueueHandler _sharedQueue;
         private readonly TimeoutAttribute _defaultTimeout;
+        private readonly RetryAttribute _defaultRetry;
         private readonly bool _allowPartialHostStartup;
+        private readonly IRetryManagerProvider _retryManagerProvider;
 
         private IFunctionIndex _index;
 
@@ -39,7 +41,9 @@ namespace Microsoft.Azure.WebJobs.Host.Indexers
             ILoggerFactory loggerFactory,
             SharedQueueHandler sharedQueue,
             IOptions<JobHostFunctionTimeoutOptions> timeoutOptions,
-            IOptions<JobHostOptions> hostOptions)
+            IOptions<JobHostOptions> hostOptions,
+            IOptions<JobHostRetryOptions> retryOptions,
+            IRetryManagerProvider retryManagerProvider)
         {
 
             _typeLocator = typeLocator ?? throw new ArgumentNullException(nameof(typeLocator));
@@ -52,6 +56,8 @@ namespace Microsoft.Azure.WebJobs.Host.Indexers
             _loggerFactory = loggerFactory;
             _defaultTimeout = timeoutOptions.Value.ToAttribute();
             _allowPartialHostStartup = hostOptions.Value.AllowPartialHostStartup;
+            _retryManagerProvider = retryManagerProvider;
+            _defaultRetry = retryOptions.Value.ToAttribute();
         }
 
         public async Task<IFunctionIndex> GetAsync(CancellationToken cancellationToken)
@@ -68,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Host.Indexers
         {
             FunctionIndex index = new FunctionIndex();
             IBindingProvider bindingProvider = _bindingProviderFactory;
-            FunctionIndexer indexer = new FunctionIndexer(_triggerBindingProvider, bindingProvider, _activator, _executor, _singletonManager, _loggerFactory, null, _sharedQueue, _defaultTimeout, _allowPartialHostStartup);
+            FunctionIndexer indexer = new FunctionIndexer(_triggerBindingProvider, bindingProvider, _activator, _executor, _singletonManager, _loggerFactory, _retryManagerProvider, null, _sharedQueue, _defaultTimeout, _defaultRetry, _allowPartialHostStartup);
             IReadOnlyList<Type> types = _typeLocator.GetTypes();
 
             foreach (Type type in types)

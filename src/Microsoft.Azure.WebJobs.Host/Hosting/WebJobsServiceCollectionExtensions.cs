@@ -31,6 +31,7 @@ namespace Microsoft.Azure.WebJobs
     public static class WebJobsServiceCollectionExtensions
     {
         private const string SingletonConfigSectionName = "Singleton";
+        private const string CheckpointRetryConfigSectionName = "CheckpointRetryPolicy";
 
         /// <summary>
         /// Adds the WebJobs services to the provided <see cref="IServiceCollection"/>.
@@ -123,6 +124,13 @@ namespace Microsoft.Azure.WebJobs
                     var section = config.GetWebJobsRootConfiguration().GetSection(SingletonConfigSectionName);
                     section.Bind(options);
                 });
+
+            //services.AddOptions<RetryPolicyOptions>()
+            //    .Configure<IConfiguration>((options, config) =>
+            //    {
+            //        IConfigurationSection section = config.GetWebJobsRootConfiguration().GetSection(CheckpointRetryConfigSectionName);
+            //        section.Bind(options);
+            //    });
 
             var builder = new WebJobsBuilder(services);
             builder.AddBuiltInBindings();
